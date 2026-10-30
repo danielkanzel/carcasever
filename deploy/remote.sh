@@ -28,6 +28,29 @@ fi
 
 cd /opt/carcasever
 chmod +x server
+
+pull_images() {
+  docker compose -f docker-compose.prod.yml pull
+}
+
+pulled=0
+for _ in 1 2 3 4 5; do
+  if pull_images; then
+    pulled=1
+    break
+  fi
+  sleep 15
+done
+if [ "$pulled" != 1 ]; then
+  if [ ! -f /etc/docker/daemon.json ]; then
+    mkdir -p /etc/docker
+    printf '%s\n' '{"registry-mirrors":["https://mirror.gcr.io"]}' > /etc/docker/daemon.json
+    systemctl restart docker
+    sleep 3
+  fi
+  pull_images
+fi
+
 docker compose -f docker-compose.prod.yml up -d --remove-orphans
 docker compose -f docker-compose.prod.yml restart app caddy
 
