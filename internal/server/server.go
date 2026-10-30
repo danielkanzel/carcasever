@@ -456,7 +456,7 @@ func (s *Server) depart(ctx context.Context, gameID, playerID string) ([]game.Ba
 		return nil, err
 	}
 	for _, b := range banks {
-		if b.Score <= 0 {
+		if b.Score <= 0 || strings.HasPrefix(b.ID, "bot-") {
 			continue
 		}
 		if err := s.db.AddScore(ctx, b.ID, b.Name, b.Score); err != nil {
@@ -585,7 +585,7 @@ func (s *Server) expire(id string) {
 		return
 	}
 	for _, b := range banks {
-		if b.Score > 0 {
+		if b.Score > 0 && !strings.HasPrefix(b.ID, "bot-") {
 			_ = s.db.AddScore(context.Background(), b.ID, b.Name, b.Score)
 		}
 	}
@@ -607,6 +607,7 @@ type command struct {
 	Open       *bool  `json:"open"`
 	MaxPlayers *int   `json:"maxPlayers"`
 	Meeples    *int   `json:"meeples"`
+	Level      int    `json:"level"`
 }
 
 func (s *Server) serveWS(w http.ResponseWriter, r *http.Request) {
@@ -694,6 +695,8 @@ func (s *Server) serveWS(w http.ResponseWriter, r *http.Request) {
 				return nil
 			case "start":
 				return g.Start(acc.ID)
+			case "bot":
+				return g.AddBot(acc.ID, cmd.Level)
 			case "kick":
 				if err := g.Kick(acc.ID, cmd.PlayerID); err != nil {
 					return err

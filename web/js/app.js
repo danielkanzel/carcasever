@@ -383,8 +383,8 @@ function renderLobby() {
     const name = document.createElement("span");
     const tags = [];
     if (p.id === state.hostId) tags.push(t("host"));
-    if (!p.connected) tags.push(t("offline"));
-    name.textContent = p.name + (tags.length ? " · " + tags.join(", ") : "");
+    if (!p.connected && !p.bot) tags.push(t("offline"));
+    name.textContent = labelOf(p) + (tags.length ? " · " + tags.join(", ") : "");
     row.append(sw, name);
     if (host && p.id !== session.id) {
       const kick = document.createElement("button");
@@ -396,6 +396,7 @@ function renderLobby() {
     }
     list.append(row);
   }
+  paintBots("lobby-bots");
   const hint = document.getElementById("lobby-hint");
   hint.textContent = state.players.length < 2 ? t("need_two") : "";
   const start = document.getElementById("start-btn");
@@ -413,7 +414,7 @@ function renderGame() {
   const me = myTurn();
   const current = state.players[state.turn];
   document.getElementById("turn-line").textContent =
-    state.status === "done" ? t("done") : me ? t("your_turn") : t("their_turn", { name: current ? current.name : "" });
+    state.status === "done" ? t("done") : me ? t("your_turn") : t("their_turn", { name: labelOf(current) });
   document.getElementById("phase-hint").textContent =
     state.status === "place" ? t("place_hint") : state.status === "meeple" ? t("meeple_hint") : "";
   const curOff = current && !current.connected && state.status !== "done";
@@ -435,16 +436,25 @@ function renderGame() {
     const name = document.createElement("span");
     const marks = [];
     if (p.skips) marks.push(t("skips", { n: p.skips }));
-    if (!p.connected) marks.push(t("offline"));
-    name.textContent = p.name + (marks.length ? " · " + marks.join(", ") : "");
+    if (!p.connected && !p.bot) marks.push(t("offline"));
+    name.textContent = labelOf(p) + (marks.length ? " · " + marks.join(", ") : "");
     const score = document.createElement("b");
     score.textContent = String(p.score);
     row.append(sw, name, pips(p.meeples, state.meepleCount), score);
+    if (session && state.hostId === session.id && p.bot && state.status !== "done") {
+      const kick = document.createElement("button");
+      kick.type = "button";
+      kick.className = "ghost";
+      kick.textContent = t("kick");
+      kick.onclick = () => send({ type: "kick", playerId: p.id });
+      row.append(kick);
+    }
     row.style.color = p.color;
     name.style.color = "var(--ink)";
     score.style.color = "var(--ink)";
     players.append(row);
   }
+  paintBots("game-bots");
 
   const log = document.getElementById("log");
   log.replaceChildren();
@@ -459,14 +469,14 @@ function renderGame() {
   done.hidden = state.status !== "done";
   if (state.status === "done") {
     const winners = state.players.filter((p) => (state.winners || []).includes(p.id));
-    const names = winners.map((p) => p.name).join(", ");
+    const names = winners.map((p) => labelOf(p)).join(", ");
     document.getElementById("done-winner").textContent = winners.length > 1 ? t("tie", { name: names }) : t("winner", { name: names });
     const ol = document.getElementById("done-scores");
     ol.replaceChildren();
     const ranked = [...state.players].sort((a, b) => b.score - a.score);
     for (const p of ranked) {
       const li = document.createElement("li");
-      li.textContent = p.name + " — " + p.score;
+      li.textContent = labelOf(p) + " — " + p.score;
       ol.append(li);
     }
   }
@@ -512,11 +522,35 @@ function pips(n, total) {
   return wrap;
 }
 
+function labelOf(p) {
+  if (!p) return "";
+  if (!p.bot) return p.name;
+  const base = t(["", "bot_easy", "bot_mid", "bot_hard"][p.bot] || "bot_mid");
+  const group = ((table && table.players) || []).filter((pl) => pl.bot === p.bot);
+  if (group.length < 2) return base;
+  return base + " " + (group.findIndex((pl) => pl.id === p.id) + 1);
+}
+
+function shownName(name) {
+  const p = ((table && table.players) || []).find((pl) => pl.name === name);
+  return p ? labelOf(p) : name;
+}
+
+function paintBots(id) {
+  const box = document.getElementById(id);
+  if (!box || !table) return;
+  const host = session && table.hostId === session.id && table.status !== "done";
+  const full = table.players.length >= table.maxPlayers;
+  box.hidden = !host;
+  for (const btn of box.querySelectorAll("[data-bot]")) btn.disabled = !host || full;
+}
+
 function eventText(ev) {
-  if (ev.kind === "score") return t("ev_score", { name: ev.name, points: ev.points, feature: t(ev.feature) });
-  if (ev.kind === "vote") return ev.n ? t("ev_vote", { name: ev.name }) : t("ev_unvote", { name: ev.name });
+  const name = shownName(ev.name);
+  if (ev.kind === "score") return t("ev_score", { name, points: ev.points, feature: t(ev.feature) });
+  if (ev.kind === "vote") return ev.n ? t("ev_vote", { name }) : t("ev_unvote", { name });
   const key = "ev_" + ev.kind;
-  const text = t(key, ev);
+  const text = t(key, Object.assign({}, ev, { name }));
   return text === key ? ev.kind : text;
 }
 
@@ -1075,6 +1109,9 @@ document.getElementById("max-inc").onclick = () => bump("max", 1);
 document.getElementById("meeple-dec").onclick = () => bump("meeples", -1);
 document.getElementById("meeple-inc").onclick = () => bump("meeples", 1);
 document.getElementById("start-btn").onclick = () => send({ type: "start" });
+for (const btn of document.querySelectorAll("[data-bot]")) {
+  btn.onclick = () => send({ type: "bot", level: Number(btn.dataset.bot) });
+}
 document.getElementById("lobby-leave").onclick = () => leaveTable();
 document.getElementById("game-leave").onclick = () => leaveTable();
 document.getElementById("done-menu").onclick = () => leaveTable();

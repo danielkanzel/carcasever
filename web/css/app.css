@@ -221,6 +221,8 @@ button:disabled { opacity: 0.42; cursor: default; box-shadow: none; }
 .panel, .side { display: grid; gap: 0.75rem; }
 .stack { display: grid; gap: 0.45rem; }
 .row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.bots { margin: 0.4rem 0 0.8rem; }
+.bots .ink { flex: 1; min-width: 6.5rem; }
 .muted { opacity: 0.72; margin: 0; }
 .code { display: block; font-size: 2rem; font-weight: 700; letter-spacing: 0.18em; line-height: 1; }
 .code-row, .setting, .steppers { display: flex; justify-content: space-between; align-items: center; gap: 0.8rem; }

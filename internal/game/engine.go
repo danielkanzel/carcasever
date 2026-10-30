@@ -15,6 +15,11 @@ const (
 
 	TurnLimit = 40 * time.Second
 	SkipLimit = 5
+	BotPause  = 900 * time.Millisecond
+
+	BotEasy   = 1
+	BotMedium = 2
+	BotHard   = 3
 )
 
 var (
@@ -54,6 +59,7 @@ type Player struct {
 	Vote      bool   `json:"vote" bson:"vote"`
 	Connected bool   `json:"connected" bson:"connected"`
 	Skips     int    `json:"skips" bson:"skips"`
+	Bot       int    `json:"bot,omitempty" bson:"bot,omitempty"`
 }
 
 type Placed struct {
@@ -210,7 +216,13 @@ func (s *State) Leave(id string) ([]Bank, error) {
 		return nil, nil
 	}
 	active := s.Status == StatusPlace || s.Status == StatusMeeple
-	ending := active && len(s.Players) <= 2
+	humansLeft := 0
+	for _, p := range s.Players {
+		if p.ID != id && p.Bot == 0 {
+			humansLeft++
+		}
+	}
+	ending := (active && len(s.Players) <= 2) || (humansLeft == 0 && (active || len(s.Players) > 1))
 	if active && !ending && i == s.Turn && s.Status == StatusMeeple {
 		s.resolve(false)
 	}
@@ -220,11 +232,11 @@ func (s *State) Leave(id string) ([]Bank, error) {
 	var banks []Bank
 	if ending {
 		for _, p := range s.Players {
-			if p.Score > 0 {
+			if p.Bot == 0 && p.Score > 0 {
 				banks = append(banks, Bank{ID: p.ID, Name: p.Name, Score: p.Score})
 			}
 		}
-	} else if active && s.Players[i].Score > 0 {
+	} else if active && s.Players[i].Bot == 0 && s.Players[i].Score > 0 {
 		banks = append(banks, Bank{ID: id, Name: s.Players[i].Name, Score: s.Players[i].Score})
 	}
 	if active && !ending {
@@ -236,6 +248,12 @@ func (s *State) Leave(id string) ([]Bank, error) {
 	s.push(Event{Kind: "leave", Name: name})
 	if s.HostID == id && len(s.Players) > 0 {
 		s.HostID = s.Players[0].ID
+		for _, p := range s.Players {
+			if p.Bot == 0 {
+				s.HostID = p.ID
+				break
+			}
+		}
 	}
 	if ending || len(s.Players) == 0 {
 		s.Status = StatusDone
@@ -270,15 +288,19 @@ func (s *State) Kick(host, target string) error {
 	if s.HostID != host {
 		return ErrNotHost
 	}
-	if s.Status != StatusLobby {
-		return ErrBadPhase
-	}
 	if host == target {
 		return ErrBadPhase
 	}
 	i := s.playerIndex(target)
 	if i < 0 {
 		return ErrNotInGame
+	}
+	if s.Status != StatusLobby {
+		if s.Players[i].Bot == 0 {
+			return ErrBadPhase
+		}
+		_, err := s.Leave(target)
+		return err
 	}
 	name := s.Players[i].Name
 	s.Players = append(s.Players[:i], s.Players[i+1:]...)
@@ -370,11 +392,15 @@ func (s *State) draw() {
 }
 
 func (s *State) armClock() {
-	if s.Status == StatusPlace || s.Status == StatusMeeple {
-		s.Deadline = time.Now().Add(TurnLimit)
+	if s.Status != StatusPlace && s.Status != StatusMeeple {
+		s.Deadline = time.Time{}
 		return
 	}
-	s.Deadline = time.Time{}
+	wait := TurnLimit
+	if cur := s.current(); cur != nil && cur.Bot > 0 {
+		wait = BotPause
+	}
+	s.Deadline = time.Now().Add(wait)
 }
 
 func (s *State) Expire(now time.Time) ([]Bank, bool) {
@@ -387,6 +413,12 @@ func (s *State) Expire(now time.Time) ([]Bank, bool) {
 	cur := s.current()
 	if cur == nil {
 		return nil, false
+	}
+	if cur.Bot > 0 {
+		if err := s.actBot(); err != nil {
+			return nil, false
+		}
+		return nil, true
 	}
 	cur.Skips++
 	if cur.Skips >= SkipLimit {
