@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io"
 	"log"
+	"math"
 	"net/http"
 	"os"
 	"strings"
@@ -609,6 +610,13 @@ type command struct {
 	Meeples    *int   `json:"meeples"`
 	Level      int    `json:"level"`
 	Text       string `json:"text"`
+	Clear      bool   `json:"clear"`
+	Points     []inkP `json:"points"`
+}
+
+type inkP struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
 }
 
 func (s *Server) serveWS(w http.ResponseWriter, r *http.Request) {
@@ -700,6 +708,16 @@ func (s *Server) serveWS(w http.ResponseWriter, r *http.Request) {
 				return g.AddBot(acc.ID, cmd.Level)
 			case "chat":
 				return g.Say(acc.ID, cmd.Text)
+			case "ink":
+				if err := g.CanInk(acc.ID); err != nil {
+					return err
+				}
+				msg, err := inkMessage(acc, g, cmd)
+				if err != nil {
+					return err
+				}
+				s.hub.broadcastSkip(g.ID, c, msg)
+				return errUnchanged
 			case "kick":
 				if err := g.Kick(acc.ID, cmd.PlayerID); err != nil {
 					return err
@@ -973,13 +991,47 @@ func (h *hub) countLocked(gameID, playerID string) int {
 }
 
 func (h *hub) broadcast(gameID string, payload []byte) {
+	h.broadcastSkip(gameID, nil, payload)
+}
+
+func (h *hub) broadcastSkip(gameID string, skip *client, payload []byte) {
 	h.mu.Lock()
 	var list []*client
 	for c := range h.rooms[gameID] {
+		if c == skip {
+			continue
+		}
 		list = append(list, c)
 	}
 	h.mu.Unlock()
 	for _, c := range list {
 		c.write(payload)
 	}
+}
+
+func inkMessage(acc store.Account, g *game.State, cmd command) ([]byte, error) {
+	color := ""
+	for _, p := range g.Players {
+		if p.ID == acc.ID {
+			color = p.Color
+			break
+		}
+	}
+	if cmd.Clear {
+		return mustJSON(map[string]any{"type": "ink", "clear": true, "playerId": acc.ID}), nil
+	}
+	if len(cmd.Points) < 2 || len(cmd.Points) > 200 {
+		return nil, errors.New("bad_command")
+	}
+	for _, p := range cmd.Points {
+		if math.IsNaN(p.X) || math.IsNaN(p.Y) || math.IsInf(p.X, 0) || math.IsInf(p.Y, 0) {
+			return nil, errors.New("bad_command")
+		}
+		if math.Abs(p.X) > 200000 || math.Abs(p.Y) > 200000 {
+			return nil, errors.New("bad_command")
+		}
+	}
+	return mustJSON(map[string]any{
+		"type": "ink", "playerId": acc.ID, "color": color, "points": cmd.Points,
+	}), nil
 }

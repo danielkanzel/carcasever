@@ -129,6 +129,19 @@ func (s *State) playerIndex(id string) int {
 	return -1
 }
 
+func (s *State) CanInk(playerID string) error {
+	if s.playerIndex(playerID) < 0 {
+		return ErrNotInGame
+	}
+	if s.Status != StatusPlace && s.Status != StatusMeeple {
+		return ErrBadPhase
+	}
+	if cur := s.current(); cur != nil && cur.ID == playerID {
+		return ErrNotYourTurn
+	}
+	return nil
+}
+
 func (s *State) current() *Player {
 	if s.Turn < 0 || s.Turn >= len(s.Players) {
 		return nil

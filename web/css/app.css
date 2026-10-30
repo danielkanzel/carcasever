@@ -243,6 +243,11 @@ button:disabled { opacity: 0.42; cursor: default; box-shadow: none; }
   border-color: #1e4a30;
   color: #f6ead0;
 }
+#draw-btn[aria-pressed="true"] {
+  background: var(--seal);
+  border-color: #6d221e;
+  color: #fff8ef;
+}
 .check { display: flex; align-items: center; gap: 0.55rem; font-weight: 600; }
 .player, .game-row {
   display: flex; align-items: center; gap: 0.6rem;

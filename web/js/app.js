@@ -23,6 +23,11 @@ let clockTimer = 0;
 let clockMarkKey = "";
 let clockPlayed = new Set();
 let cam = { x: 40, y: 40, z: 1 };
+let drawMode = false;
+let inkStrokes = [];
+let inkLive = null;
+let inkFade = 0;
+const INK_MS = 14000;
 let camReady = false;
 let rot = 0;
 let hover = null;
@@ -259,6 +264,7 @@ function connect(gameId) {
   ws.onmessage = (ev) => {
     const msg = JSON.parse(ev.data);
     if (msg.type === "state") onState(msg.state);
+    else if (msg.type === "ink") addRemoteInk(msg);
     else if (msg.type === "gone") {
       prefs.set("game", "");
       table = null;
@@ -305,7 +311,12 @@ function onState(state) {
     const last = prev.tiles[prev.tiles.length - 1];
     if (last.id === state.currentId) rot = last.rot;
   }
-  if (!prev || prev.id !== state.id) chatSeen = (state.chat || []).length;
+  if (!prev || prev.id !== state.id) {
+    chatSeen = (state.chat || []).length;
+    inkStrokes = [];
+    inkLive = null;
+    drawMode = false;
+  }
   table = state;
   noteSounds(state);
   renderChat();
@@ -485,6 +496,7 @@ function renderGame() {
   }
   drawPreview();
   showClock(state);
+  paintDraw();
 }
 
 function showClock(state) {
@@ -758,6 +770,7 @@ function drawBoard() {
       }
     }
   }
+  paintInk(ctx);
   ctx.restore();
   const shade = ctx.createRadialGradient(w * 0.5, h * 0.45, Math.min(w, h) * 0.25, w * 0.5, h * 0.5, Math.max(w, h) * 0.78);
   shade.addColorStop(0, "rgba(0,0,0,0)");
@@ -1188,11 +1201,114 @@ function spin(dir) {
 }
 document.getElementById("afk-btn").onclick = () => send({ type: "skip_afk" });
 document.getElementById("center-btn").onclick = () => centerOnLast();
+document.getElementById("draw-btn").onclick = () => {
+  if (!canDrawNow()) return;
+  drawMode = !drawMode;
+  paintDraw();
+};
+document.getElementById("erase-btn").onclick = () => {
+  if (!session) return;
+  inkStrokes = inkStrokes.filter((stroke) => stroke.playerId !== session.id);
+  inkLive = null;
+  send({ type: "ink", clear: true });
+  scheduleDraw();
+};
 document.getElementById("rot-right").onclick = () => spin(1);
 
 const board = document.getElementById("board");
 const pointers = new Map();
 let pinch = null;
+
+function canDrawNow() {
+  return !!(table && session && !myTurn() && (table.status === "place" || table.status === "meeple"));
+}
+
+function paintDraw() {
+  const ok = canDrawNow();
+  const drawBtn = document.getElementById("draw-btn");
+  const eraseBtn = document.getElementById("erase-btn");
+  if (!drawBtn || !eraseBtn) return;
+  if (!ok) drawMode = false;
+  drawBtn.hidden = !ok;
+  eraseBtn.hidden = !ok;
+  drawBtn.setAttribute("aria-pressed", drawMode ? "true" : "false");
+  const boardEl = document.getElementById("board");
+  if (boardEl && drawMode) boardEl.style.cursor = "crosshair";
+}
+
+function worldFromEvent(ev) {
+  const rect = board.getBoundingClientRect();
+  const sx = ev.clientX - rect.left;
+  const sy = ev.clientY - rect.top;
+  return { x: (sx - cam.x) / cam.z, y: (sy - cam.y) / cam.z };
+}
+
+function armInkFade() {
+  if (inkFade) return;
+  const tick = () => {
+    const now = Date.now();
+    const before = inkStrokes.length;
+    inkStrokes = inkStrokes.filter((stroke) => now - stroke.born < INK_MS);
+    if (inkStrokes.length !== before || inkLive) scheduleDraw();
+    if (inkStrokes.length || inkLive) inkFade = setTimeout(tick, 180);
+    else inkFade = 0;
+  };
+  inkFade = setTimeout(tick, 180);
+}
+
+function finishInk() {
+  const stroke = inkLive;
+  inkLive = null;
+  if (!stroke || stroke.points.length < 2 || !session) return;
+  inkStrokes.push({
+    playerId: session.id,
+    color: colorOf(session.id),
+    points: stroke.points,
+    born: Date.now(),
+  });
+  send({ type: "ink", points: stroke.points.map((p) => ({ x: p.x, y: p.y })) });
+  armInkFade();
+  scheduleDraw();
+}
+
+function addRemoteInk(msg) {
+  if (!msg) return;
+  if (msg.clear) {
+    inkStrokes = inkStrokes.filter((stroke) => stroke.playerId !== msg.playerId);
+    scheduleDraw();
+    return;
+  }
+  if (!msg.points || msg.points.length < 2) return;
+  inkStrokes.push({
+    playerId: msg.playerId,
+    color: msg.color || "#c23b3b",
+    points: msg.points,
+    born: Date.now(),
+  });
+  armInkFade();
+  scheduleDraw();
+}
+
+function paintInk(ctx) {
+  const now = Date.now();
+  const strokes = inkStrokes.filter((stroke) => now - stroke.born < INK_MS);
+  if (inkLive && inkLive.points.length > 1 && session) {
+    strokes.push({ color: colorOf(session.id), points: inkLive.points, born: now });
+  }
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  for (const stroke of strokes) {
+    const age = (now - stroke.born) / INK_MS;
+    ctx.globalAlpha = age < 0.72 ? 0.92 : Math.max(0, 0.92 * (1 - (age - 0.72) / 0.28));
+    ctx.strokeStyle = stroke.color || "#c23b3b";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+    for (let i = 1; i < stroke.points.length; i++) ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
 
 function zoomAt(sx, sy, nextZ) {
   const wx = (sx - cam.x) / cam.z;
@@ -1209,10 +1325,18 @@ function movePinch() {
   const midX = (a.x + b.x) / 2;
   const midY = (a.y + b.y) / 2;
   const rect = board.getBoundingClientRect();
+  const sx = midX - rect.left;
+  const sy = midY - rect.top;
   if (!pinch) {
-    pinch = { dist, z: cam.z };
+    pinch = { dist, z: cam.z, sx, sy };
   } else {
-    zoomAt(midX - rect.left, midY - rect.top, pinch.z * (dist / pinch.dist));
+    zoomAt(sx, sy, pinch.z * (dist / pinch.dist));
+    if (drawMode) {
+      cam.x += sx - pinch.sx;
+      cam.y += sy - pinch.sy;
+      pinch.sx = sx;
+      pinch.sy = sy;
+    }
     scheduleDraw();
   }
   if (drag) drag.moved = true;
@@ -1222,9 +1346,17 @@ function movePinch() {
 board.addEventListener("pointerdown", (ev) => {
   pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
   if (pointers.size === 1) {
-    drag = { x: ev.clientX, y: ev.clientY, camx: cam.x, camy: cam.y, moved: false };
-    board.classList.add("grabbing");
+    drag = { x: ev.clientX, y: ev.clientY, camx: cam.x, camy: cam.y, moved: false, draw: false };
+    if (drawMode && canDrawNow() && ev.button === 0) {
+      drag.draw = true;
+      inkLive = { points: [worldFromEvent(ev)] };
+      board.style.cursor = "crosshair";
+    } else {
+      board.classList.add("grabbing");
+    }
   } else if (drag) {
+    if (drag.draw) finishInk();
+    drag.draw = false;
     drag.moved = true;
     pinch = null;
   }
@@ -1238,6 +1370,19 @@ board.addEventListener("pointermove", (ev) => {
   if (pointers.has(ev.pointerId)) pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
   if (pointers.size >= 2) {
     movePinch();
+    return;
+  }
+  if (drag && drag.draw) {
+    const pt = worldFromEvent(ev);
+    const pts = inkLive.points;
+    const last = pts[pts.length - 1];
+    if (!last || Math.hypot(pt.x - last.x, pt.y - last.y) >= 3) pts.push(pt);
+    if (pts.length >= 160) {
+      finishInk();
+      inkLive = { points: [pt] };
+    }
+    drag.moved = true;
+    scheduleDraw();
     return;
   }
   if (!drag) {
@@ -1265,7 +1410,7 @@ board.addEventListener("pointermove", (ev) => {
       hotSpot = next;
       drawPreview();
     }
-    board.style.cursor = hit ? "pointer" : "";
+    board.style.cursor = drawMode && canDrawNow() ? "crosshair" : (hit ? "pointer" : "");
     scheduleDraw();
     return;
   }
@@ -1285,6 +1430,10 @@ function endPointer(ev) {
   board.classList.remove("grabbing");
   const was = drag;
   drag = null;
+  if (was && was.draw) {
+    finishInk();
+    return;
+  }
   if (was && !was.moved) onBoardClick(ev);
 }
 board.addEventListener("pointerup", endPointer);
