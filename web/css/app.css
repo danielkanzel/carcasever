@@ -454,6 +454,7 @@ body.in-game .table {
     max-width: none;
   }
   #players .pips i { display: none; }
+  #players .pips i:first-of-type { display: inline-block; flex: none; }
   #players .meeple-count {
     display: inline-block;
     color: var(--ink);
