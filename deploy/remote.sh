@@ -1,6 +1,16 @@
 #!/bin/bash
 set -euo pipefail
 
+if ! command -v curl >/dev/null 2>&1; then
+  if command -v apt-get >/dev/null 2>&1; then
+    apt-get update -qq && apt-get install -y -qq curl
+  elif command -v dnf >/dev/null 2>&1; then
+    dnf install -y curl
+  elif command -v yum >/dev/null 2>&1; then
+    yum install -y curl
+  fi
+fi
+
 if ! command -v docker >/dev/null 2>&1; then
   curl -fsSL https://get.docker.com | sh
 fi

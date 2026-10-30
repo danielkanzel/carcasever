@@ -33,7 +33,24 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq sshpass rsync
           ssh_opts="-o StrictHostKeyChecking=accept-new"
-          sshpass -e ssh $ssh_opts "$SSH_USER@$SSH_HOST" "mkdir -p /opt/carcasever"
+          sshpass -e ssh $ssh_opts "$SSH_USER@$SSH_HOST" 'bash -s' <<'EOF'
+          set -euo pipefail
+          export DEBIAN_FRONTEND=noninteractive
+          mkdir -p /opt/carcasever
+          if ! command -v rsync >/dev/null 2>&1 || ! command -v curl >/dev/null 2>&1; then
+            if command -v apt-get >/dev/null 2>&1; then
+              apt-get update -qq
+              apt-get install -y -qq rsync curl
+            elif command -v dnf >/dev/null 2>&1; then
+              dnf install -y rsync curl
+            elif command -v yum >/dev/null 2>&1; then
+              yum install -y rsync curl
+            else
+              echo "no package manager for rsync and curl" >&2
+              exit 1
+            fi
+          fi
+          EOF
           sshpass -e rsync -az --delete \
             --exclude .git \
             --exclude .idea \
