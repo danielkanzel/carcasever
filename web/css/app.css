@@ -257,6 +257,7 @@ button:disabled { opacity: 0.42; cursor: default; box-shadow: none; }
 }
 .player span, .game-row span { flex: 1; }
 .player.off { opacity: 0.5; }
+.meeple-count { display: none; }
 .pips { display: inline-flex; gap: 0.16rem; }
 .pips i {
   width: 0.38rem; height: 0.62rem; border-radius: 40% 40% 30% 30%;
@@ -445,7 +446,22 @@ body.in-game .table {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  #players .pips { display: none; }
+  #players .pips {
+    display: inline-flex;
+    align-items: center;
+    flex: none;
+    gap: 0.2rem;
+    max-width: none;
+  }
+  #players .pips i { display: none; }
+  #players .meeple-count {
+    display: inline-block;
+    color: var(--ink);
+    min-width: 1.15rem;
+    text-align: center;
+    font-size: 0.95rem;
+    line-height: 1;
+  }
   #players .player button { min-height: 32px; padding: 0.15rem 0.45rem; }
   .bots { margin: 0; }
   .bots .ink {

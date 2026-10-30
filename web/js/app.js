@@ -514,6 +514,11 @@ function showClock(state) {
 function pips(n, total) {
   const wrap = document.createElement("span");
   wrap.className = "pips";
+  wrap.title = String(n);
+  const count = document.createElement("b");
+  count.className = "meeple-count";
+  count.textContent = String(n);
+  wrap.append(count);
   for (let i = 0; i < total; i++) {
     const d = document.createElement("i");
     if (i < n) d.className = "on";
