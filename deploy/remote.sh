@@ -52,7 +52,7 @@ if [ "$pulled" != 1 ]; then
 fi
 
 docker compose -f docker-compose.prod.yml up -d --remove-orphans
-docker compose -f docker-compose.prod.yml restart app caddy
+docker compose -f docker-compose.prod.yml restart app
 
 for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
   if curl -fsS -H "Host: 194.87.236.111" http://127.0.0.1/api/health >/dev/null; then

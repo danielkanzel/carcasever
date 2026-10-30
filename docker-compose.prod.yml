@@ -18,15 +18,14 @@ services:
       WEB_DIR: /app/web
       ART_DIR: /app/resources
       PORT: "8080"
+    ports:
+      - "127.0.0.1:8080:8080"
     depends_on:
       - mongo
   caddy:
     image: caddy:2
     restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
+    network_mode: host
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
