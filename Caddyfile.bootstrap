@@ -1,0 +1,11 @@
+http://194.87.236.111 {
+	reverse_proxy 127.0.0.1:8080
+}
+
+http://carcasever.online {
+	handle /.well-known/acme-challenge/* {
+		root * /var/www/acme
+		file_server
+	}
+	reverse_proxy 127.0.0.1:8080
+}

@@ -55,6 +55,9 @@ jobs:
             --exclude .git \
             --exclude .idea \
             --exclude mongo-data \
+            --exclude certs \
+            --exclude acme \
+            --exclude Caddyfile.runtime \
             -e "ssh $ssh_opts" \
             ./ "$SSH_USER@$SSH_HOST:/opt/carcasever/"
           sshpass -e ssh $ssh_opts "$SSH_USER@$SSH_HOST" "bash /opt/carcasever/deploy/remote.sh"

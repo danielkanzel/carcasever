@@ -27,7 +27,9 @@ services:
     restart: unless-stopped
     network_mode: host
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./Caddyfile.runtime:/etc/caddy/Caddyfile:ro
+      - ./certs:/certs:ro
+      - ./acme:/var/www/acme:ro
       - caddy-data:/data
       - caddy-config:/config
     depends_on:

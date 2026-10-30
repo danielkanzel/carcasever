@@ -28,6 +28,13 @@ fi
 
 cd /opt/carcasever
 chmod +x server
+mkdir -p certs acme
+
+if [ -s certs/fullchain.pem ]; then
+  cat Caddyfile > Caddyfile.runtime
+else
+  cat Caddyfile.bootstrap > Caddyfile.runtime
+fi
 
 pull_images() {
   docker compose -f docker-compose.prod.yml pull
@@ -56,11 +63,41 @@ docker compose -f docker-compose.prod.yml restart app
 
 for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
   if curl -fsS -H "Host: 194.87.236.111" http://127.0.0.1/api/health >/dev/null; then
+    break
+  fi
+  sleep 3
+done
+if ! curl -fsS -H "Host: 194.87.236.111" http://127.0.0.1/api/health >/dev/null; then
+  echo "health check failed" >&2
+  docker compose -f docker-compose.prod.yml logs --tail 100
+  exit 1
+fi
+
+if [ ! -s certs/fullchain.pem ]; then
+  if ! command -v certbot >/dev/null 2>&1; then
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update -qq
+    apt-get install -y -qq certbot
+  fi
+  certbot certonly --webroot -w /opt/carcasever/acme -d carcasever.online \
+    --non-interactive --agree-tos --register-unsafely-without-email
+  cp -L /etc/letsencrypt/live/carcasever.online/fullchain.pem certs/fullchain.pem
+  cp -L /etc/letsencrypt/live/carcasever.online/privkey.pem certs/privkey.pem
+  cat Caddyfile > Caddyfile.runtime
+  docker compose -f docker-compose.prod.yml restart caddy
+fi
+
+cat > /etc/cron.d/carcasever-cert <<'EOF'
+0 3 * * * root certbot renew --quiet --deploy-hook "cp -L /etc/letsencrypt/live/carcasever.online/fullchain.pem /opt/carcasever/certs/fullchain.pem && cp -L /etc/letsencrypt/live/carcasever.online/privkey.pem /opt/carcasever/certs/privkey.pem && docker compose -f /opt/carcasever/docker-compose.prod.yml restart caddy"
+EOF
+
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+  if curl -fsS https://carcasever.online/api/health >/dev/null; then
     exit 0
   fi
   sleep 3
 done
 
-echo "health check failed" >&2
-docker compose -f docker-compose.prod.yml logs --tail 100
+echo "https check failed" >&2
+docker compose -f docker-compose.prod.yml logs caddy --tail 80
 exit 1
