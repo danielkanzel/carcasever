@@ -53,6 +53,65 @@ func TestBotPlaysTurn(t *testing.T) {
 	}
 }
 
+func TestBotsPlaceMeeples(t *testing.T) {
+	for _, level := range []int{BotEasy, BotMedium, BotHard} {
+		s := lobby(t)
+		s.UseRand(rand.New(rand.NewPCG(uint64(level)*17, 9)))
+		if err := s.AddBot("p1", level); err != nil {
+			t.Fatal(err)
+		}
+		if err := s.Start("p1"); err != nil {
+			t.Fatal(err)
+		}
+		placed := 0
+		botID := ""
+		for _, p := range s.Players {
+			if p.Bot == level {
+				botID = p.ID
+			}
+		}
+		for step := 0; step < 40 && placed < 2; step++ {
+			if s.Status == StatusDone {
+				break
+			}
+			cur := s.current()
+			if cur == nil {
+				t.Fatal("no current")
+			}
+			before := cur.Meeples
+			id := cur.ID
+			if cur.Bot == 0 {
+				if s.Status == StatusPlace {
+					move := Legal(s)[0]
+					if err := s.Place(id, move.X, move.Y, move.Rots[0]); err != nil {
+						t.Fatal(err)
+					}
+				} else if err := s.Pass(id); err != nil {
+					t.Fatal(err)
+				}
+				continue
+			}
+			if _, ok := s.Expire(s.Deadline.Add(time.Second)); !ok {
+				t.Fatalf("level %d bot did not act", level)
+			}
+			for _, p := range s.Players {
+				if p.ID == id && p.Meeples < before {
+					placed++
+				}
+			}
+		}
+		if placed == 0 {
+			left := 0
+			for _, p := range s.Players {
+				if p.ID == botID {
+					left = p.Meeples
+				}
+			}
+			t.Fatalf("level %d placed no meeples, left %d", level, left)
+		}
+	}
+}
+
 func TestOnlyBotsEndsMatch(t *testing.T) {
 	s := lobby(t)
 	if err := s.AddPlayer("p2", "Боря"); err != nil {

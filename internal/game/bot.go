@@ -138,33 +138,51 @@ func (s *State) chooseMeeple(p *Player) (string, int, bool) {
 	}
 	r := s.rand()
 	if p.Bot == BotEasy {
-		if r.IntN(4) != 0 {
+		if r.IntN(4) == 0 {
 			return "", 0, false
 		}
-		sp := free[r.IntN(len(free))]
+		var solid []Spot
+		for _, sp := range free {
+			if sp.Kind != KindField {
+				solid = append(solid, sp)
+			}
+		}
+		pool := free
+		if len(solid) > 0 {
+			pool = solid
+		}
+		sp := pool[r.IntN(len(pool))]
 		return sp.Kind, sp.Index, true
 	}
-	best, bestAt := -1, 0
+	bestV, bestI := -1, 0
+	solidV, solidI := -1, 0
+	solid := false
 	for i, sp := range free {
 		value := s.rateSpot(sp)
 		if p.Bot == BotMedium {
 			value += r.IntN(3) - 1
 		}
-		if value > best {
-			best, bestAt = value, i
+		if value > bestV {
+			bestV, bestI = value, i
+		}
+		if sp.Kind != KindField && value > solidV {
+			solidV, solidI = value, i
+			solid = true
 		}
 	}
-	need := 4
-	if p.Bot == BotHard {
-		need = 6
-		if p.Meeples <= 2 {
-			need = 9
+	if solid {
+		if p.Bot == BotHard && p.Meeples <= 1 && solidV < 6 {
+			return "", 0, false
 		}
+		return free[solidI].Kind, free[solidI].Index, true
 	}
-	if best < need {
+	if p.Bot == BotHard && p.Meeples < 4 {
 		return "", 0, false
 	}
-	return free[bestAt].Kind, free[bestAt].Index, true
+	if p.Bot == BotMedium && r.IntN(2) == 0 {
+		return "", 0, false
+	}
+	return free[bestI].Kind, free[bestI].Index, true
 }
 
 func (s *State) rateSpot(sp Spot) int {
@@ -176,25 +194,31 @@ func (s *State) rateSpot(sp Spot) int {
 	switch sp.Kind {
 	case KindCity:
 		f, _ := walkCity(s, idx, last.X, last.Y, sp.Index)
-		worth := len(f.tiles)*2 + f.shields*2
-		if f.open <= 0 {
-			return worth + 4
+		score := 4 + len(f.tiles)*2 + f.shields*3
+		if f.open <= 1 {
+			score += 6
+		} else if f.open > 3 {
+			score -= f.open
 		}
-		return worth * 2 / (f.open + 1)
-	case KindRoad:
-		f, _ := walkRoad(s, idx, last.X, last.Y, sp.Index)
-		if f.open <= 0 {
-			return len(f.tiles) + 2
-		}
-		return len(f.tiles) * 3 / (f.open + 1)
-	case KindMonastery:
-		return 1 + neighbors8(idx, last.X, last.Y)
-	case KindField:
-		_, _, _, open := walkField(s, idx, nil, last.X, last.Y, sp.Index)
-		if open > 3 {
+		if score < 1 {
 			return 1
 		}
-		return 5 - open
+		return score
+	case KindRoad:
+		f, _ := walkRoad(s, idx, last.X, last.Y, sp.Index)
+		score := 3 + len(f.tiles)*2
+		if f.open <= 1 {
+			score += 4
+		}
+		return score
+	case KindMonastery:
+		return 6 + neighbors8(idx, last.X, last.Y)
+	case KindField:
+		_, _, _, open := walkField(s, idx, nil, last.X, last.Y, sp.Index)
+		if open > 4 {
+			return 1
+		}
+		return 4 - open/2
 	default:
 		return 0
 	}
