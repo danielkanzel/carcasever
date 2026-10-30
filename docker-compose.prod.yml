@@ -1,0 +1,40 @@
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - carca-mongo:/data/db
+  app:
+    image: alpine:3.22
+    restart: unless-stopped
+    entrypoint: ["/app/server"]
+    volumes:
+      - ./server:/app/server:ro
+      - ./web:/app/web:ro
+      - ./resources:/app/resources:ro
+    environment:
+      MONGO_URI: mongodb://mongo:27017
+      MONGO_DB: carcasever
+      WEB_DIR: /app/web
+      ART_DIR: /app/resources
+      PORT: "8080"
+    depends_on:
+      - mongo
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+
+volumes:
+  carca-mongo:
+  caddy-data:
+  caddy-config:

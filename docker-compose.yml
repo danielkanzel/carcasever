@@ -1,0 +1,21 @@
+services:
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - carca-mongo:/data/db
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      MONGO_URI: mongodb://mongo:27017
+      MONGO_DB: carcasever
+      WEB_DIR: /app/web
+      ART_DIR: /app/resources
+    depends_on:
+      - mongo
+
+volumes:
+  carca-mongo:

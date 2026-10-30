@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Бесконечный Каркассон</title>
+  <link rel="icon" href="/img/favicon.ico" type="image/x-icon">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="mark" aria-hidden="true"></span>
+      <div>
+        <h1 data-i18n="title">Бесконечный Каркассон</h1>
+        <small id="who"></small>
+      </div>
+    </div>
+    <button id="settings-btn" class="ghost" type="button" data-i18n="settings">Настройки</button>
+  </header>
+
+  <main>
+    <section id="view-menu" hidden>
+      <div class="menu-bg" aria-hidden="true">
+        <img class="menu-slide is-on" src="/img/backgrounds/output.png" alt="">
+        <img class="menu-slide" src="/img/backgrounds/output5.png" alt="">
+        <img class="menu-slide" src="/img/backgrounds/output7.png" alt="">
+        <img class="menu-slide" src="/img/backgrounds/output4.png" alt="">
+        <img class="menu-slide" src="/img/backgrounds/output3.png" alt="">
+        <img class="menu-slide" src="/img/backgrounds/output2.png" alt="">
+      </div>
+      <div class="menu-scrim" aria-hidden="true"></div>
+      <div class="menu-copy">
+        <h1 data-i18n="title">Бесконечный Каркассон</h1>
+      </div>
+      <form id="menu-form" class="panel menu-card">
+        <label>
+          <span data-i18n="name">Имя</span>
+          <input id="name" maxlength="24" autocomplete="nickname" required>
+        </label>
+        <button class="seal" type="submit" data-i18n="create">Новая партия</button>
+        <button class="ink" type="button" id="go-browse" data-i18n="join_open">Присоединиться</button>
+        <button class="ink" type="button" id="go-ranks" data-i18n="ranks">Рейтинг</button>
+        <button class="ink" type="button" id="go-rules" data-i18n="rules">Правила</button>
+        <button class="ink" type="button" id="go-register" data-i18n="register">Регистрация</button>
+        <button class="ink" type="button" id="go-login" data-i18n="login">Войти</button>
+        <button class="ink" type="button" id="go-logout" hidden data-i18n="logout">Выйти из аккаунта</button>
+        <button class="ink hidden-until" type="button" id="go-resume" data-i18n="resume">Вернуться за стол</button>
+      </form>
+    </section>
+
+    <section id="view-register" hidden>
+      <div class="panel narrow">
+        <h2 data-i18n="register">Регистрация</h2>
+        <p class="muted" data-i18n="register_hint">Логин сохранит имя и очки рейтинга. Можно зарегистрировать текущий профиль.</p>
+        <form id="register-form" class="stack">
+          <label>
+            <span data-i18n="name">Имя</span>
+            <input id="reg-name" maxlength="24" autocomplete="nickname" required>
+          </label>
+          <label>
+            <span data-i18n="login">Логин</span>
+            <input id="reg-login" maxlength="24" autocomplete="username" required>
+          </label>
+          <label>
+            <span data-i18n="password">Пароль</span>
+            <input id="reg-pass" type="password" maxlength="72" autocomplete="new-password" required>
+          </label>
+          <label>
+            <span data-i18n="password2">Пароль ещё раз</span>
+            <input id="reg-pass2" type="password" maxlength="72" autocomplete="new-password" required>
+          </label>
+          <button class="seal" type="submit" data-i18n="register">Регистрация</button>
+        </form>
+        <button class="ghost" type="button" data-back data-i18n="back">Назад</button>
+      </div>
+    </section>
+
+    <section id="view-login" hidden>
+      <div class="panel narrow">
+        <h2 data-i18n="login">Войти</h2>
+        <form id="login-form" class="stack">
+          <label>
+            <span data-i18n="login">Логин</span>
+            <input id="login-name" maxlength="24" autocomplete="username" required>
+          </label>
+          <label>
+            <span data-i18n="password">Пароль</span>
+            <input id="login-pass" type="password" maxlength="72" autocomplete="current-password" required>
+          </label>
+          <button class="seal" type="submit" data-i18n="login">Войти</button>
+        </form>
+        <button class="ghost" type="button" data-back data-i18n="back">Назад</button>
+      </div>
+    </section>
+
+    <section id="view-ranks" hidden>
+      <div class="panel narrow">
+        <h2 data-i18n="ranks_title"></h2>
+        <div id="ranks-list" class="stack"></div>
+        <p id="ranks-empty" class="muted" data-i18n="ranks_empty"></p>
+        <button class="ghost" type="button" data-back data-i18n="back"></button>
+      </div>
+    </section>
+
+    <section id="view-browse" hidden>
+      <div class="panel narrow">
+        <h2 data-i18n="join_open"></h2>
+        <form id="join-form" class="stack">
+          <label>
+            <span data-i18n="code_title"></span>
+            <input id="code" data-i18n-placeholder="code_ph" maxlength="12" autocapitalize="characters" autocomplete="off">
+          </label>
+          <button class="seal" type="submit" data-i18n="enter"></button>
+        </form>
+        <h3 data-i18n="open_title"></h3>
+        <div id="browse-list" class="stack"></div>
+        <p id="browse-empty" class="muted" data-i18n="empty"></p>
+        <button class="ghost" type="button" data-back data-i18n="back"></button>
+      </div>
+    </section>
+
+    <section id="view-rules" hidden>
+      <div class="panel narrow rules">
+        <h2 data-i18n="rules"></h2>
+        <div class="rulebook">
+          <p data-i18n="rule_tiles"></p>
+          <p data-i18n="rule_turn"></p>
+          <p data-i18n="rule_city"></p>
+          <p data-i18n="rule_road"></p>
+          <p data-i18n="rule_cloister"></p>
+          <p data-i18n="rule_field"></p>
+          <p data-i18n="rule_clock"></p>
+          <p data-i18n="rule_table"></p>
+        </div>
+        <button class="ghost" type="button" id="rules-back" data-i18n="back"></button>
+      </div>
+    </section>
+
+    <section id="view-settings" hidden>
+      <div class="panel narrow">
+        <h2 data-i18n="settings"></h2>
+        <div class="setting">
+          <span data-i18n="sound"></span>
+          <button id="sound-btn" type="button" class="ink"></button>
+        </div>
+        <div class="setting">
+          <span data-i18n="language"></span>
+          <div class="seg">
+            <button type="button" data-lang="ru">Русский</button>
+            <button type="button" data-lang="en">English</button>
+          </div>
+        </div>
+        <div class="setting">
+          <span data-i18n="quality"></span>
+          <div class="seg" id="quality-seg">
+            <button type="button" data-quality="low" data-i18n="low"></button>
+            <button type="button" data-quality="med" data-i18n="med"></button>
+            <button type="button" data-quality="high" data-i18n="high"></button>
+          </div>
+        </div>
+        <button class="ghost" type="button" id="settings-back" data-i18n="back"></button>
+      </div>
+    </section>
+
+    <section id="view-lobby" hidden>
+      <div class="panel lobby">
+        <div class="code-row">
+          <div>
+            <span class="muted" data-i18n="code_title"></span>
+            <strong id="lobby-code" class="code"></strong>
+          </div>
+          <button id="copy-code" type="button" class="ink" data-i18n="copy"></button>
+        </div>
+        <label class="check">
+          <input id="set-open" type="checkbox">
+          <span id="open-label"></span>
+        </label>
+        <div class="steppers">
+          <div>
+            <span data-i18n="seats_n"></span>
+            <div class="step">
+              <button type="button" id="max-dec" aria-label="-">−</button>
+              <b id="set-max">5</b>
+              <button type="button" id="max-inc" aria-label="+">+</button>
+            </div>
+          </div>
+          <div>
+            <span data-i18n="meeples_n"></span>
+            <div class="step">
+              <button type="button" id="meeple-dec" aria-label="-">−</button>
+              <b id="set-meeples">7</b>
+              <button type="button" id="meeple-inc" aria-label="+">+</button>
+            </div>
+          </div>
+        </div>
+        <h3 data-i18n="players"></h3>
+        <div id="lobby-players" class="stack"></div>
+        <p id="lobby-hint" class="muted"></p>
+        <div class="row">
+          <button id="start-btn" class="seal" type="button" data-i18n="start"></button>
+          <button id="lobby-leave" class="ghost" type="button" data-i18n="leave"></button>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-game" hidden>
+      <div class="table">
+        <div class="board-wrap">
+          <canvas id="board"></canvas>
+          <div id="done-card" class="panel done" hidden>
+            <h2 data-i18n="done"></h2>
+            <p id="done-winner"></p>
+            <ol id="done-scores"></ol>
+            <button id="done-menu" class="seal" type="button" data-i18n="to_menu"></button>
+          </div>
+        </div>
+        <aside class="side">
+          <p id="turn-line"></p>
+          <p id="phase-hint" class="muted"></p>
+          <p id="clock" class="muted" hidden></p>
+          <button id="game-rules" class="ghost" type="button" data-i18n="rules"></button>
+          <canvas id="preview" width="220" height="220"></canvas>
+          <div class="row">
+            <button id="rot-right" type="button" class="ink" data-i18n="rotate"></button>
+          </div>
+          <div id="spots" class="stack"></div>
+          <button id="pass-btn" type="button" class="ink" data-i18n="pass"></button>
+          <button id="recall-btn" type="button" class="ghost" data-i18n="recall"></button>
+          <div id="players" class="stack"></div>
+          <button id="afk-btn" type="button" class="ink" data-i18n="skip_afk"></button>
+          <button id="game-leave" class="ghost" type="button" data-i18n="leave"></button>
+          <button id="center-btn" type="button" class="ghost" data-i18n="center"></button>
+          <h3 data-i18n="log"></h3>
+          <ol id="log"></ol>
+        </aside>
+      </div>
+    </section>
+
+    <section id="view-tiles" hidden>
+      <div id="tile-gallery" class="gallery"></div>
+    </section>
+  </main>
+  <div id="toasts"></div>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/draw.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+name: Deploy
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build server
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o server ./cmd/server
+
+      - name: Upload and restart
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq sshpass rsync
+          ssh_opts="-o StrictHostKeyChecking=accept-new"
+          sshpass -e ssh $ssh_opts "$SSH_USER@$SSH_HOST" "mkdir -p /opt/carcasever"
+          sshpass -e rsync -az --delete \
+            --exclude .git \
+            --exclude .idea \
+            --exclude mongo-data \
+            -e "ssh $ssh_opts" \
+            ./ "$SSH_USER@$SSH_HOST:/opt/carcasever/"
+          sshpass -e ssh $ssh_opts "$SSH_USER@$SSH_HOST" "bash /opt/carcasever/deploy/remote.sh"
