@@ -80,7 +80,8 @@ const I18N = {
     erase: "Стереть",
     log: "Ход партии",
     chat: "Чат",
-    chat_ph: "Сообщение",
+    chat_ph: "Написать сообщение",
+    chat_empty: "Пока тихо. Напишите первым.",
     send: "Отправить",
     done: "Партия закрыта",
     winner: "Победитель — {name}",
@@ -214,7 +215,8 @@ const I18N = {
     erase: "Erase",
     log: "Chronicle",
     chat: "Chat",
-    chat_ph: "Message",
+    chat_ph: "Write a message",
+    chat_empty: "Quiet so far. Say something.",
     send: "Send",
     done: "The game is over",
     winner: "Winner — {name}",
@@ -284,4 +286,5 @@ function applyI18n() {
   document.title = t("title");
   for (const el of document.querySelectorAll("[data-i18n]")) el.textContent = t(el.dataset.i18n);
   for (const el of document.querySelectorAll("[data-i18n-placeholder]")) el.placeholder = t(el.dataset.i18nPlaceholder);
+  for (const el of document.querySelectorAll("[data-i18n-aria]")) el.setAttribute("aria-label", t(el.dataset.i18nAria));
 }

@@ -533,14 +533,30 @@ function renderChat() {
     const list = root.querySelector(".chat-log");
     const stick = list.scrollHeight - list.scrollTop - list.clientHeight < 28;
     list.replaceChildren();
+    if (!lines.length) {
+      const empty = document.createElement("li");
+      empty.className = "chat-empty";
+      empty.textContent = t("chat_empty");
+      list.append(empty);
+    }
+    let prevId = "";
     for (const line of lines) {
-      const li = document.createElement("li");
-      const name = document.createElement("b");
       const who = (table.players || []).find((pl) => pl.id === line.playerId);
-      name.textContent = (who ? labelOf(who) : line.name) + ": ";
-      name.style.color = line.color || (who && who.color) || "inherit";
-      li.append(name, document.createTextNode(line.text));
+      const mine = !!(session && line.playerId === session.id);
+      const li = document.createElement("li");
+      li.className = "chat-line" + (mine ? " mine" : "");
+      if (line.playerId !== prevId) {
+        const name = document.createElement("span");
+        name.className = "chat-name";
+        name.textContent = who ? labelOf(who) : line.name;
+        name.style.color = line.color || (who && who.color) || "inherit";
+        li.append(name);
+      }
+      const text = document.createElement("p");
+      text.textContent = line.text;
+      li.append(text);
       list.append(li);
+      prevId = line.playerId;
     }
     if (stick || root.open) list.scrollTop = list.scrollHeight;
   }
