@@ -224,28 +224,37 @@
           </div>
         </div>
         <aside class="side">
-          <p id="turn-line"></p>
-          <p id="phase-hint" class="muted"></p>
-          <p id="clock" class="muted" hidden></p>
-          <button id="game-rules" class="ghost" type="button" data-i18n="rules"></button>
-          <canvas id="preview" width="220" height="220"></canvas>
-          <div class="row">
-            <button id="rot-right" type="button" class="ink" data-i18n="rotate"></button>
+          <div class="dock">
+            <div class="dock-head">
+              <p id="turn-line"></p>
+              <p id="clock" class="muted" hidden></p>
+            </div>
+            <p id="phase-hint" class="muted"></p>
+            <div class="dock-play">
+              <canvas id="preview" width="220" height="220"></canvas>
+              <div class="dock-actions">
+                <button id="rot-right" type="button" class="ink" data-i18n="rotate"></button>
+                <button id="pass-btn" type="button" class="ink" data-i18n="pass">Не ставить человечка</button>
+                <button id="recall-btn" type="button" class="ghost" data-i18n="recall"></button>
+                <button id="afk-btn" type="button" class="ink" data-i18n="skip_afk"></button>
+              </div>
+            </div>
           </div>
-          <div id="spots" class="stack"></div>
-          <button id="pass-btn" type="button" class="ink" data-i18n="pass"></button>
-          <button id="recall-btn" type="button" class="ghost" data-i18n="recall"></button>
           <div id="players" class="stack"></div>
           <div id="game-bots" class="row bots" hidden>
             <button type="button" class="ink" data-bot="1" data-i18n="bot_easy">Лёгкий</button>
             <button type="button" class="ink" data-bot="2" data-i18n="bot_mid">Средний</button>
             <button type="button" class="ink" data-bot="3" data-i18n="bot_hard">Сложный</button>
           </div>
-          <button id="afk-btn" type="button" class="ink" data-i18n="skip_afk"></button>
-          <button id="game-leave" class="ghost" type="button" data-i18n="leave"></button>
-          <button id="center-btn" type="button" class="ghost" data-i18n="center"></button>
-          <h3 data-i18n="log"></h3>
-          <ol id="log"></ol>
+          <div class="row tools">
+            <button id="game-rules" class="ghost" type="button" data-i18n="rules"></button>
+            <button id="center-btn" type="button" class="ghost" data-i18n="center"></button>
+            <button id="game-leave" class="ghost" type="button" data-i18n="leave"></button>
+          </div>
+          <details class="log-fold">
+            <summary data-i18n="log"></summary>
+            <ol id="log"></ol>
+          </details>
         </aside>
       </div>
     </section>

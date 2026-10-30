@@ -264,10 +264,34 @@ button:disabled { opacity: 0.42; cursor: default; box-shadow: none; }
 }
 .pips i.on { background: currentColor; }
 
+body.in-game {
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+body.in-game main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+body.in-game #view-game:not([hidden]) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
 .table {
-  height: calc(100vh - 4rem);
+  height: calc(100dvh - 4rem);
   display: grid;
   grid-template-columns: 1fr 332px;
+}
+body.in-game .table {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+  width: 100%;
 }
 .board-wrap { position: relative; min-height: 420px; }
 #board { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
@@ -283,7 +307,12 @@ button:disabled { opacity: 0.42; cursor: default; box-shadow: none; }
   border-left: 1px solid rgba(184, 137, 61, 0.35);
   align-content: start;
 }
+.dock { display: grid; gap: 0.75rem; justify-items: center; }
+.dock-head, #phase-hint, .dock-actions, .dock-play { justify-self: stretch; }
+.dock-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.6rem; }
+.dock-actions { display: grid; gap: 0.5rem; }
 #turn-line { font-size: 1.35rem; font-weight: 700; line-height: 1.15; margin: 0; }
+#clock { margin: 0; white-space: nowrap; }
 #preview {
   width: 220px; height: 220px;
   background: #2c4a34;
@@ -291,11 +320,22 @@ button:disabled { opacity: 0.42; cursor: default; box-shadow: none; }
   justify-self: center;
   box-shadow: inset 0 0 0 3px rgba(42, 28, 20, 0.35), 0 8px 18px rgba(42, 28, 20, 0.18);
 }
+.log-fold summary {
+  cursor: pointer;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.95rem;
+}
 #log {
-  margin: 0; padding-left: 1.15rem;
+  margin: 0.35rem 0 0; padding-left: 1.15rem;
   max-height: 160px; overflow: auto;
 }
 #log li { margin: 0.18rem 0; }
+@media (min-width: 801px) and (min-height: 501px) {
+  .log-fold summary { display: none; }
+  .log-fold #log { display: block; }
+}
 .done {
   position: absolute; left: 50%; top: 10%;
   transform: translateX(-50%);
@@ -323,7 +363,7 @@ button:disabled { opacity: 0.42; cursor: default; box-shadow: none; }
 }
 .current { box-shadow: inset 0 0 0 2px var(--seal); }
 
-@media (max-width: 800px) {
+@media (max-width: 800px), (max-height: 520px) {
   .top {
     padding: 0.4rem 0.7rem;
     padding-top: max(0.4rem, env(safe-area-inset-top));
@@ -337,22 +377,92 @@ button:disabled { opacity: 0.42; cursor: default; box-shadow: none; }
     white-space: nowrap;
   }
   .mark { width: 1.85rem; height: 1.85rem; }
+  body.in-game .top {
+    padding: 0.28rem 0.6rem;
+    padding-top: max(0.28rem, env(safe-area-inset-top));
+  }
+  body.in-game .brand small { display: none; }
+  body.in-game .brand h1 { font-size: 0.95rem; max-width: 62vw; }
+  body.in-game .mark { width: 1.5rem; height: 1.5rem; }
   .table {
-    height: calc(100dvh - 2.8rem - env(safe-area-inset-top));
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(0, 1fr) minmax(9.5rem, 42dvh);
+    grid-template-rows: minmax(0, 1fr) auto;
   }
   .board-wrap { min-height: 0; height: 100%; }
   .side {
+    overflow: hidden;
     min-height: 0;
-    padding: 0.45rem 0.7rem calc(0.55rem + env(safe-area-inset-bottom));
-    gap: 0.4rem;
+    padding: 0.35rem 0.55rem calc(0.4rem + env(safe-area-inset-bottom));
+    gap: 0.35rem;
     border-left: 0;
     border-top: 1px solid rgba(184, 137, 61, 0.45);
   }
-  #turn-line { font-size: 1.05rem; }
-  #preview { width: 84px; height: 84px; }
-  #log { max-height: 4.2rem; }
+  .dock { gap: 0.28rem; }
+  #phase-hint { display: none; }
+  #turn-line {
+    font-size: 1rem;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #clock { font-size: 0.88rem; }
+  .dock-play {
+    display: grid;
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    gap: 0.4rem;
+    align-items: center;
+  }
+  .dock-play:has(#preview[hidden]) { grid-template-columns: 1fr; }
+  #preview { width: 4.5rem; height: 4.5rem; }
+  .dock-actions {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.35rem;
+  }
+  #pass-btn, #afk-btn { grid-column: 1 / -1; }
+  .dock-actions button {
+    min-height: 42px;
+    padding: 0.35rem 0.55rem;
+    font-size: 0.92rem;
+  }
+  #players.stack {
+    display: flex;
+    gap: 0.35rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 0.05rem;
+  }
+  #players .player {
+    flex: 0 0 auto;
+    align-items: center;
+    max-width: 12.5rem;
+    padding: 0.28rem 0.45rem;
+    font-size: 0.84rem;
+  }
+  #players .player span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #players .pips { display: none; }
+  #players .player button { min-height: 32px; padding: 0.15rem 0.45rem; }
+  .bots { margin: 0; }
+  .bots .ink {
+    min-width: 0;
+    min-height: 36px;
+    padding: 0.25rem 0.4rem;
+    font-size: 0.8rem;
+  }
+  .tools { gap: 0.35rem; }
+  .tools button {
+    flex: 1;
+    min-height: 36px;
+    padding: 0.25rem 0.4rem;
+    font-size: 0.82rem;
+  }
+  .log-fold summary { font-size: 0.78rem; }
+  #log { max-height: 4.6rem; }
   .menu-copy { padding: 4.2rem 0.9rem 0; }
   .menu-copy h1 { font-size: clamp(1.7rem, 10vw, 2.5rem); }
   #view-menu { overflow: auto; }
@@ -375,4 +485,13 @@ button:disabled { opacity: 0.42; cursor: default; box-shadow: none; }
     bottom: calc(0.6rem + env(safe-area-inset-bottom));
   }
   .toast { max-width: none; }
+}
+
+@media (max-height: 520px) {
+  body.in-game .dock-play { grid-template-columns: 3.3rem minmax(0, 1fr); }
+  body.in-game #preview { width: 3.3rem; height: 3.3rem; }
+  body.in-game .dock-actions button,
+  body.in-game .tools button { min-height: 34px; padding: 0.2rem 0.4rem; }
+  body.in-game .log-fold { display: none; }
+  body.in-game .side { gap: 0.25rem; padding-top: 0.25rem; }
 }

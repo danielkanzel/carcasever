@@ -82,6 +82,7 @@ function show(name) {
   }
   clearInterval(browseTimer);
   document.body.classList.toggle("at-menu", name === "menu");
+  document.body.classList.toggle("in-game", name === "game");
   if (name === "menu") {
     document.getElementById("go-resume").hidden = !prefs.get("game", "");
     paintAccount();
@@ -424,7 +425,6 @@ function renderGame() {
   const adjusting = me && (state.status === "place" || state.status === "meeple");
   document.getElementById("rot-right").hidden = !adjusting;
   document.getElementById("preview").hidden = state.status !== "place" && state.status !== "meeple";
-  document.getElementById("spots").replaceChildren();
 
   const players = document.getElementById("players");
   players.replaceChildren();
