@@ -608,6 +608,7 @@ type command struct {
 	MaxPlayers *int   `json:"maxPlayers"`
 	Meeples    *int   `json:"meeples"`
 	Level      int    `json:"level"`
+	Text       string `json:"text"`
 }
 
 func (s *Server) serveWS(w http.ResponseWriter, r *http.Request) {
@@ -697,6 +698,8 @@ func (s *Server) serveWS(w http.ResponseWriter, r *http.Request) {
 				return g.Start(acc.ID)
 			case "bot":
 				return g.AddBot(acc.ID, cmd.Level)
+			case "chat":
+				return g.Say(acc.ID, cmd.Text)
 			case "kick":
 				if err := g.Kick(acc.ID, cmd.PlayerID); err != nil {
 					return err

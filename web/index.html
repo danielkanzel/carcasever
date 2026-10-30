@@ -205,6 +205,14 @@
           <button type="button" class="ink" data-bot="3" data-i18n="bot_hard">Сложный</button>
         </div>
         <p id="lobby-hint" class="muted"></p>
+        <details class="chat-fold" data-chat>
+          <summary><span data-i18n="chat">Чат</span> <b class="chat-unread" hidden></b></summary>
+          <ol class="chat-log"></ol>
+          <form class="chat-form">
+            <input class="chat-text" maxlength="200" autocomplete="off" data-i18n-placeholder="chat_ph" placeholder="Сообщение">
+            <button class="ink" type="submit" data-i18n="send">Отправить</button>
+          </form>
+        </details>
         <div class="row">
           <button id="start-btn" class="seal" type="button" data-i18n="start"></button>
           <button id="lobby-leave" class="ghost" type="button" data-i18n="leave"></button>
@@ -251,6 +259,14 @@
             <button id="center-btn" type="button" class="ghost" data-i18n="center"></button>
             <button id="game-leave" class="ghost" type="button" data-i18n="leave"></button>
           </div>
+          <details class="chat-fold" data-chat>
+            <summary><span data-i18n="chat">Чат</span> <b class="chat-unread" hidden></b></summary>
+            <ol class="chat-log"></ol>
+            <form class="chat-form">
+              <input class="chat-text" maxlength="200" autocomplete="off" data-i18n-placeholder="chat_ph" placeholder="Сообщение">
+              <button class="ink" type="submit" data-i18n="send">Отправить</button>
+            </form>
+          </details>
           <details class="log-fold">
             <summary data-i18n="log"></summary>
             <ol id="log"></ol>

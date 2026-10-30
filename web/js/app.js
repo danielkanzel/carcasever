@@ -13,6 +13,7 @@ let session = null;
 let view = "menu";
 let settingsReturn = "menu";
 let table = null;
+let chatSeen = 0;
 let socket = null;
 let socketGame = "";
 let retry = 0;
@@ -304,8 +305,10 @@ function onState(state) {
     const last = prev.tiles[prev.tiles.length - 1];
     if (last.id === state.currentId) rot = last.rot;
   }
+  if (!prev || prev.id !== state.id) chatSeen = (state.chat || []).length;
   table = state;
   noteSounds(state);
+  renderChat();
   if (state.status === "lobby") {
     if (view !== "settings") show("lobby");
     renderLobby();
@@ -509,6 +512,39 @@ function showClock(state) {
   };
   tick();
   clockTimer = setInterval(tick, 500);
+}
+
+function renderChat() {
+  if (!table) return;
+  const lines = table.chat || [];
+  for (const root of document.querySelectorAll("[data-chat]")) {
+    const list = root.querySelector(".chat-log");
+    const stick = list.scrollHeight - list.scrollTop - list.clientHeight < 28;
+    list.replaceChildren();
+    for (const line of lines) {
+      const li = document.createElement("li");
+      const name = document.createElement("b");
+      const who = (table.players || []).find((pl) => pl.id === line.playerId);
+      name.textContent = (who ? labelOf(who) : line.name) + ": ";
+      name.style.color = line.color || (who && who.color) || "inherit";
+      li.append(name, document.createTextNode(line.text));
+      list.append(li);
+    }
+    if (stick || root.open) list.scrollTop = list.scrollHeight;
+  }
+  const fresh = lines.slice(chatSeen);
+  const unread = fresh.filter((line) => !session || line.playerId !== session.id).length;
+  if (visibleChatOpen() || (fresh.length > 0 && unread === 0)) chatSeen = lines.length;
+  for (const badge of document.querySelectorAll(".chat-unread")) {
+    const root = badge.closest("[data-chat]");
+    const show = unread > 0 && root && !root.open;
+    badge.hidden = !show;
+    badge.textContent = show ? String(unread) : "";
+  }
+}
+
+function visibleChatOpen() {
+  return [...document.querySelectorAll("[data-chat]")].some((el) => el.open && !el.closest("[hidden]"));
 }
 
 function pips(n, total) {
@@ -1120,6 +1156,23 @@ for (const btn of document.querySelectorAll("[data-bot]")) {
 document.getElementById("lobby-leave").onclick = () => leaveTable();
 document.getElementById("game-leave").onclick = () => leaveTable();
 document.getElementById("done-menu").onclick = () => leaveTable();
+for (const root of document.querySelectorAll("[data-chat]")) {
+  root.addEventListener("toggle", () => {
+    if (!root.open || !table) return;
+    chatSeen = (table.chat || []).length;
+    renderChat();
+  });
+}
+for (const form of document.querySelectorAll(".chat-form")) {
+  form.addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const input = form.querySelector("input");
+    const text = input.value.trim();
+    if (!text) return;
+    send({ type: "chat", text });
+    input.value = "";
+  });
+}
 document.getElementById("pass-btn").onclick = () => send({ type: "pass" });
 document.getElementById("recall-btn").onclick = () => send({ type: "recall" });
 function spin(dir) {

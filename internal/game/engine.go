@@ -79,25 +79,26 @@ type Event struct {
 }
 
 type State struct {
-	ID          string    `json:"id" bson:"_id"`
-	Code        string    `json:"code" bson:"code"`
-	HostID      string    `json:"hostId" bson:"hostId"`
-	Open        bool      `json:"open" bson:"open"`
-	Status      string    `json:"status" bson:"status"`
-	MaxPlayers  int       `json:"maxPlayers" bson:"maxPlayers"`
-	MeepleCount int       `json:"meepleCount" bson:"meepleCount"`
-	Players     []Player  `json:"players" bson:"players"`
-	Tiles       []Placed  `json:"tiles" bson:"tiles"`
-	CurrentID   string    `json:"currentId,omitempty" bson:"currentId,omitempty"`
-	Turn        int       `json:"turn" bson:"turn"`
-	Events      []Event   `json:"events" bson:"events"`
-	Winners     []string  `json:"winners,omitempty" bson:"winners,omitempty"`
-	LastX       int       `json:"lastX" bson:"lastX"`
-	LastY       int       `json:"lastY" bson:"lastY"`
-	HasLast     bool      `json:"hasLast" bson:"hasLast"`
-	CreatedAt   time.Time `json:"createdAt" bson:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt" bson:"updatedAt"`
-	Deadline    time.Time `json:"deadline,omitempty" bson:"deadline,omitempty"`
+	ID          string     `json:"id" bson:"_id"`
+	Code        string     `json:"code" bson:"code"`
+	HostID      string     `json:"hostId" bson:"hostId"`
+	Open        bool       `json:"open" bson:"open"`
+	Status      string     `json:"status" bson:"status"`
+	MaxPlayers  int        `json:"maxPlayers" bson:"maxPlayers"`
+	MeepleCount int        `json:"meepleCount" bson:"meepleCount"`
+	Players     []Player   `json:"players" bson:"players"`
+	Tiles       []Placed   `json:"tiles" bson:"tiles"`
+	CurrentID   string     `json:"currentId,omitempty" bson:"currentId,omitempty"`
+	Turn        int        `json:"turn" bson:"turn"`
+	Events      []Event    `json:"events" bson:"events"`
+	Chat        []ChatLine `json:"chat,omitempty" bson:"chat,omitempty"`
+	Winners     []string   `json:"winners,omitempty" bson:"winners,omitempty"`
+	LastX       int        `json:"lastX" bson:"lastX"`
+	LastY       int        `json:"lastY" bson:"lastY"`
+	HasLast     bool       `json:"hasLast" bson:"hasLast"`
+	CreatedAt   time.Time  `json:"createdAt" bson:"createdAt"`
+	UpdatedAt   time.Time  `json:"updatedAt" bson:"updatedAt"`
+	Deadline    time.Time  `json:"deadline,omitempty" bson:"deadline,omitempty"`
 
 	rng *rand.Rand
 }
@@ -1264,25 +1265,26 @@ func groupOf(groups [][]int, item int) int {
 }
 
 type Public struct {
-	ID          string    `json:"id"`
-	Code        string    `json:"code"`
-	HostID      string    `json:"hostId"`
-	Open        bool      `json:"open"`
-	Status      string    `json:"status"`
-	MaxPlayers  int       `json:"maxPlayers"`
-	MeepleCount int       `json:"meepleCount"`
-	Players     []Player  `json:"players"`
-	Tiles       []Placed  `json:"tiles"`
-	CurrentID   string    `json:"currentId,omitempty"`
-	Turn        int       `json:"turn"`
-	Events      []Event   `json:"events"`
-	Winners     []string  `json:"winners,omitempty"`
-	LastX       int       `json:"lastX"`
-	LastY       int       `json:"lastY"`
-	HasLast     bool      `json:"hasLast"`
-	Deadline    time.Time `json:"deadline,omitempty"`
-	Legal       []Move    `json:"legal,omitempty"`
-	Spots       []Spot    `json:"spots,omitempty"`
+	ID          string     `json:"id"`
+	Code        string     `json:"code"`
+	HostID      string     `json:"hostId"`
+	Open        bool       `json:"open"`
+	Status      string     `json:"status"`
+	MaxPlayers  int        `json:"maxPlayers"`
+	MeepleCount int        `json:"meepleCount"`
+	Players     []Player   `json:"players"`
+	Tiles       []Placed   `json:"tiles"`
+	CurrentID   string     `json:"currentId,omitempty"`
+	Turn        int        `json:"turn"`
+	Events      []Event    `json:"events"`
+	Chat        []ChatLine `json:"chat,omitempty"`
+	Winners     []string   `json:"winners,omitempty"`
+	LastX       int        `json:"lastX"`
+	LastY       int        `json:"lastY"`
+	HasLast     bool       `json:"hasLast"`
+	Deadline    time.Time  `json:"deadline,omitempty"`
+	Legal       []Move     `json:"legal,omitempty"`
+	Spots       []Spot     `json:"spots,omitempty"`
 }
 
 func Project(s *State) Public {
@@ -1291,7 +1293,7 @@ func Project(s *State) Public {
 		MaxPlayers: s.MaxPlayers, MeepleCount: s.MeepleCount, Players: s.Players,
 		Tiles: s.Tiles, CurrentID: s.CurrentID, Turn: s.Turn, Events: s.Events,
 		Winners: s.Winners, LastX: s.LastX, LastY: s.LastY, HasLast: s.HasLast,
-		Deadline: s.Deadline,
+		Deadline: s.Deadline, Chat: s.Chat,
 	}
 	if p.Players == nil {
 		p.Players = []Player{}
@@ -1301,6 +1303,9 @@ func Project(s *State) Public {
 	}
 	if p.Events == nil {
 		p.Events = []Event{}
+	}
+	if p.Chat == nil {
+		p.Chat = []ChatLine{}
 	}
 	p.Legal = Legal(s)
 	p.Spots = Spots(s)

@@ -236,6 +236,7 @@ func (s *State) clone() *State {
 		}
 	}
 	cp.Events = nil
+	cp.Chat = nil
 	cp.Winners = nil
 	return &cp
 }

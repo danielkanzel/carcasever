@@ -321,12 +321,39 @@ body.in-game .table {
   justify-self: center;
   box-shadow: inset 0 0 0 3px rgba(42, 28, 20, 0.35), 0 8px 18px rgba(42, 28, 20, 0.18);
 }
+.chat-fold summary,
 .log-fold summary {
   cursor: pointer;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   font-size: 0.95rem;
+}
+.chat-log {
+  list-style: none;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  max-height: 9rem;
+  overflow: auto;
+  display: grid;
+  gap: 0.28rem;
+}
+.chat-log li { margin: 0; line-height: 1.3; overflow-wrap: anywhere; }
+.chat-form { display: flex; gap: 0.35rem; margin-top: 0.4rem; }
+.chat-form input { flex: 1; min-width: 0; }
+.chat-form button { flex: none; }
+.chat-unread {
+  display: inline-block;
+  margin-left: 0.35rem;
+  min-width: 1.2rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--seal);
+  color: #fff8ef;
+  font-size: 0.78rem;
+  letter-spacing: 0;
+  text-transform: none;
+  text-align: center;
 }
 #log {
   margin: 0.35rem 0 0; padding-left: 1.15rem;
@@ -478,7 +505,9 @@ body.in-game .table {
     padding: 0.25rem 0.4rem;
     font-size: 0.82rem;
   }
-  .log-fold summary { font-size: 0.78rem; }
+  .log-fold summary, .chat-fold summary { font-size: 0.78rem; }
+  .chat-log { max-height: 6.5rem; }
+  .chat-form button { min-height: 40px; padding: 0.3rem 0.6rem; }
   #log { max-height: 4.6rem; }
   .menu-copy { padding: 4.2rem 0.9rem 0; }
   .menu-copy h1 { font-size: clamp(1.7rem, 10vw, 2.5rem); }
